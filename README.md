@@ -33,63 +33,35 @@ Before you begin, ensure you have the following installed:
 
 ## Setup Instructions
 
-To run this project locally, you will need to configure both a Firebase project and a Google Cloud project.
+To run this project locally, you will need to configure a Google Cloud project with OAuth 2.0.
 
-### 1. Firebase Project Setup
+### 1. Google Cloud Project Setup
 
-This project uses Firebase for user authentication.
-
-1.  **Create a Firebase Project**: Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-2.  **Add a Web App**: In your project's dashboard, add a new Web application.
-3.  **Get Firebase Config**: After creating the web app, Firebase will provide you with a `firebaseConfig` object. Copy these keys. You will need them for the environment variables.
-4.  **Enable Google Authentication**:
-    *   In the Firebase Console, go to the **Authentication** section.
-    *   Click on the **Sign-in method** tab.
-    *   Select **Google** from the list of providers and enable it.
-
-### 2. Google Cloud Project Setup
-
-This project interacts with Google Cloud APIs (BigQuery and Cloud Resource Manager). Your Firebase project is also a Google Cloud project.
-
-1.  **Select Your Project**: Go to the [Google Cloud Console](https://console.cloud.google.com/) and select the same project you are using for Firebase.
+1.  **Select Project**: Use your Google Cloud Project ID.
 2.  **Enable APIs**:
-    *   Navigate to the **APIs & Services > Library**.
-    *   Search for and enable the following APIs:
-        *   **BigQuery API**
-        *   **Cloud Resource Manager API**
-        *   **Identity and Access Management (IAM) API**
-3.  **Configure OAuth Consent Screen**:
-    *   Navigate to **APIs & Services > OAuth consent screen**.
-    *   Choose **External** and create a consent screen. Fill in the required application details.
-    *   Add your email to the list of **Test users** while you are in development.
-4.  **Create OAuth 2.0 Credentials**:
-    *   Navigate to **APIs & Services > Credentials**.
-    *   Click **+ CREATE CREDENTIALS** and select **OAuth client ID**.
-    *   Choose **Web application** as the application type.
-    *   Under **Authorized JavaScript origins**, add `http://localhost:9002`.
-    *   Under **Authorized redirect URIs**, add `http://localhost:9002/`.
-    *   Your `Client ID` and `Client Secret` are not directly used in the code, but this step is required to authorize your web app.
-5.  **Get a Gemini API Key**:
-    *   Go to [Google AI Studio](https://aistudio.google.com/app/apikey) to generate an API key for using the Gemini models via Genkit.
+    *   BigQuery API
+    *   Cloud Resource Manager API
+    *   IAM API
+3.  **Configure OAuth 2.0**:
+    *   Go to **APIs & Services > Credentials**.
+    *   Click **+ CREATE CREDENTIALS** -> **OAuth client ID**.
+    *   Type: **Web application**.
+    *   **Authorized Redirect URIs**: `http://localhost:9002/api/auth/callback`
+    *   Save your `Client ID` and `Client Secret`.
 
-### 3. Environment Variables
+### 2. Environment Variables
 
-Create a file named `.env.local` in the root of your project and add the configuration values you obtained from the steps above.
+Create `.env` (or `.env.local`):
 
 ```dotenv
-# Firebase Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-firebase-auth-domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-firebase-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-firebase-storage-bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-firebase-messaging-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-firebase-app-id
+# Google Auth
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+NEXT_PUBLIC_BASE_URL=http://localhost:9002
 
-# Genkit / Google AI API Key
-GEMINI_API_KEY=your-gemini-api-key
+# Genkit
+GEMINI_API_KEY=your-key
 ```
-
-Replace the `your-firebase-*` and `your-gemini-api-key` placeholders with your actual credentials.
 
 ### 4. Install Dependencies
 
