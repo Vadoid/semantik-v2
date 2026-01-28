@@ -11,7 +11,26 @@ We have recently deployed major performance and stability improvements:
 -   **🔢 BigInt Support**: Implemented efficient, native-like serialization for BigQuery `INT64` types to handle massive numbers without precision loss or double-serialization overhead.
 -   **🛡️ Type Safety**: Resolved all TypeScript errors (implicit any, component props) and enforced strict type checking (`npm run typecheck`).
 -   **✅ Comprehensive Testing**: Added a robust unit testing suite using Vitest to ensure reliability of core logic and utility functions.
+-   **✅ Comprehensive Testing**: Added a robust unit testing suite using Vitest to ensure reliability of core logic and utility functions.
 
+## 🌟 Key Features
+
+### 🧠 Semantic Layer Builder
+Turn complex data relationships into clear, manageable views without writing a single line of JOIN code.
+-   **Visual Modeling**: Drag-and-drop tables onto an infinite canvas to build your data model visually.
+-   **AI-Assisted Relationships**: Click "Suggest Joins" to let Gemini 1.5 Pro analyze your schemas and propose logical connections (Foreign Keys, Common Columns) automatically.
+-   **One-Click SQL Generation**: Converting your visual diagram into a production-ready BigQuery `CREATE VIEW` statement with optimized JOINs and column selections.
+
+### ⚡ AI-Powered Query Editor
+A professional-grade SQL environment designed for BigQuery power users.
+-   **Intelligent Auto-Completion**: Powered by Monaco Editor (VS Code engine) for robust syntax highlighting.
+-   **Real-Time Cost Estimation**: "Dry Run" logic runs automatically as you type, warning you of query costs (bytes billed) *before* you execute.
+-   **AI Optimizer**: The "Improve with AI" agent analyzes your query for performance bottlenecks and suggests cost-saving optimizations or readability improvements in real-time.
+
+### 🔎 Interactive Schema Explorer
+-   **Hybrid Metadata Engine**: Instantly load thousands of tables using `INFORMATION_SCHEMA` acceleration.
+-   **Deep Inspection**: View detailed partition info, clustering data, and row counts at a glance.
+-   **Context-Aware**: Drag tables directly from the sidebar into the SQL Editor or Semantic Layer to start working immediately.
 ## Architecture & Design Decisions
 
 ### BigQuery Metadata Strategy
@@ -79,19 +98,26 @@ Once the setup is complete, you can start the development server:
 npm run dev
 ```
 
-This will start two services:
-*   The Next.js application, typically available at `http://localhost:9002`.
-*   The Genkit AI development server.
+This will start the Next.js application, typically available at `http://localhost:9002`.
 
 Open [http://localhost:9002](http://localhost:9002) in your browser to see the application. You should be prompted to log in with your Google account.
-### 6. Run Tests
 
-To run the unit tests, use the following command:
+### 6. Testing
+
+**Unit Tests**:
+Run the Vitest unit test suite (including new AI flow tests):
 
 ```bash
 npm test
 ```
 
-This project uses [Vitest](https://vitest.dev/) for unit testing. Tests are located alongside the source files (e.g., `src/lib/bigquery.test.ts`).
+**Type Checking**:
+Verify TypeScript types across the entire project:
+
+```bash
+npm run typecheck
+```
+
+This project uses [Vitest](https://vitest.dev/) for unit testing. Tests are located alongside the source files (e.g., `src/ai/flows/__tests__/*.test.ts`).
 
 

@@ -8,8 +8,8 @@
  * - ProposeJoinsOutput - The return type for the proposeJoins function.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { z } from 'zod';
 
 const TableInputSchema = z.object({
     id: z.string().describe('The unique ID of the table, usually in project.dataset.table format.'),
@@ -42,14 +42,54 @@ export type ProposeJoinsInput = z.infer<typeof ProposeJoinsInputSchema>;
 export type ProposeJoinsOutput = z.infer<typeof ProposeJoinsOutputSchema>;
 
 export async function proposeJoins(input: ProposeJoinsInput): Promise<ProposeJoinsOutput> {
-  return proposeJoinsFlow(input);
-}
+  const { tables } = input;
+  if (tables.length < 2) {
+    return { proposals: [] };
+  }
 
-const prompt = ai.definePrompt({
-  name: 'proposeJoinsPrompt',
-  input: { schema: ProposeJoinsInputSchema },
-  output: { schema: ProposeJoinsOutputSchema },
-  prompt: `You are an expert data architect specializing in database design and identifying relationships between tables.
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-pro',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          proposals: {
+            type: SchemaType.ARRAY,
+            description: 'An array of proposed joins between the tables.',
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                fromTable: { type: SchemaType.STRING, description: 'The ID of the source table for the join.' },
+                fromField: { type: SchemaType.STRING, description: 'The field from the source table to join on.' },
+                toTable: { type: SchemaType.STRING, description: 'The ID of the target table for the join.' },
+                toField: { type: SchemaType.STRING, description: 'The field from the target table to join on.' },
+                cardinality: { type: SchemaType.STRING, format: 'enum', enum: ['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many'], description: 'The proposed cardinality of the join.' },
+                reason: { type: SchemaType.STRING, description: 'A brief explanation for why this join is being proposed.' },
+              },
+              required: ['fromTable', 'fromField', 'toTable', 'toField', 'cardinality', 'reason'],
+            },
+          },
+        },
+        required: ['proposals'],
+      },
+    },
+  });
+
+  // Helper to format tables for the prompt
+  const tablesFormatted = tables.map(t => `
+- Table Name: ${t.name} (ID: ${t.id})
+  Schema:
+  ${t.schema.map(s => `- ${s.name} (${s.type})`).join('\n  ')}
+`).join('\n');
+
+  const prompt = `You are an expert data architect specializing in database design and identifying relationships between tables.
 
 Analyze the schemas of the following tables and propose logical joins between them.
 
@@ -62,27 +102,16 @@ Consider the following when making proposals:
 For each proposal, provide the source and target tables and fields, the cardinality, and a brief reason for your suggestion. Only propose joins between different tables.
 
 Tables:
-{{#each tables}}
-- Table Name: {{name}} (ID: {{id}})
-  Schema:
-  {{#each schema}}
-  - {{name}} ({{type}})
-  {{/each}}
-{{/each}}
-`,
-});
+${tablesFormatted}`;
 
-const proposeJoinsFlow = ai.defineFlow(
-  {
-    name: 'proposeJoinsFlow',
-    inputSchema: ProposeJoinsInputSchema,
-    outputSchema: ProposeJoinsOutputSchema,
-  },
-  async (input) => {
-    if (input.tables.length < 2) {
-      return { proposals: [] };
-    }
-    const { output } = await prompt(input);
-    return output!;
+  const result = await model.generateContent(prompt);
+  const responseText = result.response.text();
+
+  try {
+    const parsed = JSON.parse(responseText);
+    return ProposeJoinsOutputSchema.parse(parsed);
+  } catch (error) {
+    console.error('Failed to parse Gemini response:', responseText, error);
+    throw new Error('Failed to propose joins: Invalid response from AI model.');
   }
-);
+}

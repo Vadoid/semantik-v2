@@ -8,8 +8,8 @@
  * - GenerateDataInsightsOutput - The return type for the generateDataInsights function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { z } from 'zod';
 
 const GenerateDataInsightsInputSchema = z.object({
   queryResults: z
@@ -28,29 +28,41 @@ export type GenerateDataInsightsOutput = z.infer<typeof GenerateDataInsightsOutp
 export async function generateDataInsights(
   input: GenerateDataInsightsInput
 ): Promise<GenerateDataInsightsOutput> {
-  return generateDataInsightsFlow(input);
-}
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not set');
+  }
 
-const prompt = ai.definePrompt({
-  name: 'generateDataInsightsPrompt',
-  input: {schema: GenerateDataInsightsInputSchema},
-  output: {schema: GenerateDataInsightsOutputSchema},
-  prompt: `You are an expert data analyst. Analyze the following query results from BigQuery and generate insights, key trends, and patterns.
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-pro',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          insights: { type: SchemaType.STRING, description: 'The insights generated from the query results.' },
+        },
+        required: ['insights'],
+      },
+    },
+  });
+
+  const prompt = `You are an expert data analyst. Analyze the following query results from BigQuery and generate insights, key trends, and patterns.
 
 Your response should be a single string, but formatted for readability with clear headings for each insight and paragraphs separated by double newline characters (\n\n).
 
 Query Results:
-{{queryResults}}`,
-});
+${input.queryResults}`;
 
-const generateDataInsightsFlow = ai.defineFlow(
-  {
-    name: 'generateDataInsightsFlow',
-    inputSchema: GenerateDataInsightsInputSchema,
-    outputSchema: GenerateDataInsightsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  const result = await model.generateContent(prompt);
+  const responseText = result.response.text();
+
+  try {
+    const parsed = JSON.parse(responseText);
+    return GenerateDataInsightsOutputSchema.parse(parsed);
+  } catch (error) {
+    console.error('Failed to parse Gemini response:', responseText, error);
+    throw new Error('Failed to generate insights: Invalid response from AI model.');
   }
-);
+}

@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -9,7 +8,6 @@
  * - GenerateSqlOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const TableSchema = z.object({
@@ -53,17 +51,6 @@ export type GenerateSqlOutput = z.infer<typeof GenerateSqlOutputSchema>;
 
 
 export async function generateSqlFromSemanticLayer(input: GenerateSqlInput): Promise<GenerateSqlOutput> {
-  return generateSqlFromSemanticLayerFlow(input);
-}
-
-
-const generateSqlFromSemanticLayerFlow = ai.defineFlow(
-  {
-    name: 'generateSqlFromSemanticLayerFlow',
-    inputSchema: GenerateSqlInputSchema,
-    outputSchema: GenerateSqlOutputSchema,
-  },
-  async (input) => {
     const { tables, relationships, selectedFields, viewName, projectId } = input;
 
     // If no tables are in the workspace, create a placeholder view.
@@ -176,5 +163,4 @@ const generateSqlFromSemanticLayerFlow = ai.defineFlow(
     const sqlQuery = `CREATE OR REPLACE VIEW \`${projectId}.semantic_views.${viewName}\` AS\n${selectClause}\n${fromAndJoins};`;
 
     return { sqlQuery };
-  }
-);
+}
